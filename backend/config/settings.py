@@ -43,6 +43,7 @@ INSTALLED_APPS = [
     "tenants",
     "authentication",
     "fleet",
+    "customers",
 ]
 
 MIDDLEWARE = [
