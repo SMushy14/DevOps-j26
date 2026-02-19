@@ -1,4 +1,4 @@
-"""Customer model – inherits TenantAwareModel (which provides soft-delete)."""
+"""Customer model - inherits TenantAwareModel (which provides soft-delete)."""
 
 from __future__ import annotations
 

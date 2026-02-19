@@ -10,7 +10,9 @@ router.register(r"vehicles", VehicleViewSet, basename="vehicle")
 
 # Nested document routes
 document_list = VehicleDocumentViewSet.as_view({"get": "list", "post": "create"})
-document_detail = VehicleDocumentViewSet.as_view({"get": "retrieve", "put": "update", "patch": "partial_update", "delete": "destroy"})
+document_detail = VehicleDocumentViewSet.as_view(
+    {"get": "retrieve", "put": "update", "patch": "partial_update", "delete": "destroy"}
+)
 
 urlpatterns = [
     path("", include(router.urls)),

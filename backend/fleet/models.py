@@ -1,4 +1,4 @@
-"""Vehicle model – inherits TenantAwareModel (which provides soft-delete)."""
+"""Vehicle model - inherits TenantAwareModel (which provides soft-delete)."""
 
 from __future__ import annotations
 
@@ -25,7 +25,7 @@ class VehicleStatus(models.TextChoices):
     SOLD = "sold", "Sold"
 
 
-# Allowed status transitions – Sold is terminal.
+# Allowed status transitions - Sold is terminal.
 VALID_STATUS_TRANSITIONS: dict[str, list[str]] = {
     VehicleStatus.ACTIVE: [VehicleStatus.MAINTENANCE, VehicleStatus.OUT_OF_SERVICE, VehicleStatus.SOLD],
     VehicleStatus.MAINTENANCE: [VehicleStatus.ACTIVE, VehicleStatus.OUT_OF_SERVICE, VehicleStatus.SOLD],
