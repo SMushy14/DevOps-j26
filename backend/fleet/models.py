@@ -67,6 +67,11 @@ class Vehicle(TenantAwareModel):
     def __str__(self) -> str:
         return f"{self.make} {self.model} ({self.license_plate})"
 
+    @property
+    def documents_active(self):
+        """Return non-deleted documents for this vehicle."""
+        return self.documents.filter(deleted_at__isnull=True)
+
     def transition_status(self, new_status: str) -> None:
         """Transition to *new_status* if allowed, else raise ValidationError."""
         allowed = VALID_STATUS_TRANSITIONS.get(self.status, [])
@@ -112,6 +117,7 @@ class VehicleDocument(TenantAwareModel):
 
     class Meta:
         db_table = "fleet_vehicle_document"
+        ordering: ClassVar[list[str]] = ["-created_at"]
 
     def __str__(self) -> str:
         return f"{self.title} ({self.document_type})"
