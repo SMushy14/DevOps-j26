@@ -3,7 +3,7 @@
 from rest_framework import serializers
 
 from authentication.models import User
-from fleet.models import DriverProfile, StatusHistory, Vehicle, VehicleDocument
+from fleet.models import DriverProfile, StatusHistory, Trip, Vehicle, VehicleDocument
 
 
 class VehicleSerializer(serializers.ModelSerializer):
@@ -125,3 +125,76 @@ class DriverProfileSerializer(serializers.ModelSerializer):
             "updated_at",
         ]
         read_only_fields = ["id", "user", "created_at", "updated_at"]
+
+
+class TripSerializer(serializers.ModelSerializer):
+    """Serializer for trip listing and creation."""
+
+    # Nested read-only fields
+    vehicle = VehicleSerializer(read_only=True)
+    driver = UserSerializer(read_only=True)
+
+    # Write-only IDs for creation
+    vehicle_id = serializers.PrimaryKeyRelatedField(
+        queryset=Vehicle.objects.all(),
+        source="vehicle",
+        write_only=True,
+    )
+    driver_id = serializers.PrimaryKeyRelatedField(
+        queryset=User.objects.all(),
+        source="driver",
+        write_only=True,
+    )
+
+    # Computed read-only fields
+    distance_km = serializers.IntegerField(read_only=True)
+    duration_hours = serializers.FloatField(read_only=True)
+
+    class Meta:
+        model = Trip
+        fields = [
+            "id",
+            "vehicle",
+            "vehicle_id",
+            "driver",
+            "driver_id",
+            "status",
+            "start_time",
+            "end_time",
+            "start_mileage",
+            "end_mileage",
+            "start_location",
+            "end_location",
+            "purpose",
+            "fuel_consumed",
+            "notes",
+            "distance_km",
+            "duration_hours",
+            "created_at",
+            "updated_at",
+        ]
+        read_only_fields = [
+            "id",
+            "vehicle",
+            "driver",
+            "status",
+            "distance_km",
+            "duration_hours",
+            "created_at",
+            "updated_at",
+        ]
+
+
+class CompleteTripSerializer(serializers.Serializer):
+    """Serializer for completing a trip."""
+
+    end_time = serializers.DateTimeField()
+    end_mileage = serializers.IntegerField(min_value=0)
+    end_location = serializers.CharField(max_length=255, required=False, allow_blank=True)
+    fuel_consumed = serializers.DecimalField(
+        max_digits=8,
+        decimal_places=2,
+        required=False,
+        allow_null=True,
+    )
+    notes = serializers.CharField(required=False, allow_blank=True)

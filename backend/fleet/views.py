@@ -7,8 +7,10 @@ from rest_framework.response import Response
 
 from authentication.models import Role, User
 from authentication.permissions import IsTenantMember
-from fleet.models import DriverProfile, Vehicle, VehicleDocument
+from fleet.models import DriverProfile, Trip, Vehicle, VehicleDocument
 from fleet.serializers import (
+    CompleteTripSerializer,
+    TripSerializer,
     DriverAssignSerializer,
     DriverProfileSerializer,
     MileageSerializer,
@@ -172,3 +174,66 @@ class DriverProfileViewSet(viewsets.ModelViewSet):
     def perform_destroy(self, instance):
         """Soft-delete driver profile."""
         instance.soft_delete()
+
+
+class TripViewSet(viewsets.ModelViewSet):
+    """
+    CRUD for trips, scoped to the requesting user's tenant.
+    Includes custom action for completing trips.
+    """
+
+    permission_classes = [IsTenantMember]
+    serializer_class = TripSerializer
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
+    filterset_fields = ["status", "vehicle", "driver"]
+    search_fields = ["start_location", "end_location", "purpose"]
+    ordering_fields = ["start_time", "end_time", "created_at"]
+    ordering = ["-start_time"]
+
+    def get_queryset(self):
+        """Return only active trips for the user's tenant."""
+        return Trip.objects.active().filter(
+            tenant=self.request.user.tenant,
+        ).select_related("vehicle", "driver")
+
+    def perform_create(self, serializer):
+        """Auto-set tenant when creating a trip."""
+        serializer.save(tenant=self.request.user.tenant)
+
+    def perform_destroy(self, instance):
+        """Soft-delete trip (cancel)."""
+        instance.soft_delete()
+
+    @action(detail=True, methods=["post"])
+    def complete(self, request, pk=None):
+        """Complete a trip and update vehicle mileage."""
+        from fleet.serializers import CompleteTripSerializer
+
+        trip = self.get_object()
+
+        serializer = CompleteTripSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        # Update trip
+        trip.end_time = serializer.validated_data["end_time"]
+        trip.end_mileage = serializer.validated_data["end_mileage"]
+        trip.end_location = serializer.validated_data.get("end_location", "")
+        trip.fuel_consumed = serializer.validated_data.get("fuel_consumed")
+        
+        if "notes" in serializer.validated_data:
+            trip.notes = serializer.validated_data["notes"]
+        
+        trip.status = "completed"
+        
+        # Validate before saving
+        trip.full_clean()
+        trip.save()
+
+        # Update vehicle mileage
+        vehicle = trip.vehicle
+        vehicle.current_mileage = trip.end_mileage
+        vehicle.save(update_fields=["current_mileage"])
+
+        # Return updated trip
+        output_serializer = TripSerializer(trip, context={"request": request})
+        return Response(output_serializer.data)

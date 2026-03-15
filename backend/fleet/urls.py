@@ -3,11 +3,12 @@
 from django.urls import include, path
 from rest_framework.routers import DefaultRouter
 
-from fleet.views import DriverProfileViewSet, VehicleDocumentViewSet, VehicleViewSet
+from fleet.views import DriverProfileViewSet, TripViewSet, VehicleDocumentViewSet, VehicleViewSet
 
 router = DefaultRouter()
 router.register(r"vehicles", VehicleViewSet, basename="vehicle")
 router.register(r"drivers", DriverProfileViewSet, basename="driver")
+router.register(r"trips", TripViewSet, basename="trip")
 
 # Nested document routes
 document_list = VehicleDocumentViewSet.as_view({"get": "list", "post": "create"})
