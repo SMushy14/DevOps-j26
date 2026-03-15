@@ -3,6 +3,8 @@ import {
   LayoutDashboard,
   Truck,
   Users,
+  UserCog,
+  MapPin,
   BarChart3,
   Settings,
 } from 'lucide-react';
@@ -16,6 +18,8 @@ interface SidebarProps {
 const menuItems = [
   { label: 'Dashboard', icon: LayoutDashboard, path: '/dashboard' },
   { label: 'Vehicles', icon: Truck, path: '/vehicles' },
+  { label: 'Drivers', icon: UserCog, path: '/drivers' },
+  { label: 'Trips', icon: MapPin, path: '/trips' },
   { label: 'Customers', icon: Users, path: '/customers' },
   { label: 'Reports', icon: BarChart3, path: '/reports' },
   { label: 'Settings', icon: Settings, path: '/settings' },
