@@ -166,6 +166,16 @@ resource "aws_security_group" "web" {
     cidr_blocks = [var.your_ip_address]
   }
 
+  # Allow SSH from GitHub Actions (for automated deployments)
+  # NOTE: For production, use AWS Systems Manager Session Manager instead
+  ingress {
+    description = "SSH from anywhere (GitHub Actions)"
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
   # Allow all outbound traffic
   egress {
     description = "Allow all outbound"
