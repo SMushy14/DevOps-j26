@@ -17,9 +17,9 @@ import TripCompletePage from "./pages/TripCompletePage";
 
 function DashboardPlaceholder() {
   return (
-    <div>
-      <h1 className="text-2xl font-bold text-text-primary">Dashboard</h1>
-      <p className="text-text-secondary mt-2">Welcome to FleeMa Fleet Management</p>
+    <div className="p-6">
+      <h1 className="text-2xl font-bold" style={{ color: 'var(--color-text-primary)' }}>Dashboard</h1>
+      <p className="mt-2" style={{ color: 'var(--color-text-secondary)' }}>Welcome to FleeMa Fleet Management</p>
     </div>
   );
 }
