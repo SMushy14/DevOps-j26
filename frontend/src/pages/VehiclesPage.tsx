@@ -1,6 +1,12 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useVehicleStore } from "../store/vehicleStore";
+import { PageHeader } from "../components/layout/PageHeader";
+import { Button } from "../components/ui/button";
+import { Input } from "../components/ui/input";
+import { Badge } from "../components/ui/badge";
+import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from "../components/ui/table";
+import { Card } from "../components/ui/card";
 import type { VehicleStatus } from "../types";
 
 const STATUS_OPTIONS: { value: string; label: string }[] = [
@@ -11,11 +17,11 @@ const STATUS_OPTIONS: { value: string; label: string }[] = [
   { value: "sold", label: "Sold" },
 ];
 
-const statusColor: Record<VehicleStatus, string> = {
-  active: "#16a34a",
-  maintenance: "#ca8a04",
-  out_of_service: "#dc2626",
-  sold: "#6b7280",
+const statusVariant: Record<VehicleStatus, "success" | "warning" | "danger" | "secondary"> = {
+  active: "success",
+  maintenance: "warning",
+  out_of_service: "danger",
+  sold: "secondary",
 };
 
 export default function VehiclesPage() {
@@ -39,98 +45,134 @@ export default function VehiclesPage() {
   const totalPages = Math.ceil(totalCount / 20);
 
   return (
-    <div className="page">
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <h1>Vehicles</h1>
-        <button onClick={() => navigate("/vehicles/new")}>+ Add Vehicle</button>
+    <div>
+      <PageHeader
+        title="Vehicles"
+        description={`Manage your fleet of ${totalCount} vehicles`}
+        actions={
+          <Button onClick={() => navigate("/vehicles/new")}>
+            Add Vehicle
+          </Button>
+        }
+      />
+
+      <div className="mt-6">
+        {error && (
+          <div className="bg-danger/10 border border-danger text-danger rounded-lg p-4 mb-4 flex items-center justify-between">
+            <span>{error}</span>
+            <button onClick={clearError} className="text-danger hover:text-danger/80">
+              &times;
+            </button>
+          </div>
+        )}
+
+        <Card className="mb-6">
+          <div className="flex gap-4">
+            <Input
+              type="search"
+              placeholder="Search make, model, plate..."
+              value={search}
+              onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+              className="flex-1"
+            />
+            <select
+              value={status}
+              onChange={(e) => { setStatus(e.target.value); setPage(1); }}
+              className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+            >
+              {STATUS_OPTIONS.map((o) => (
+                <option key={o.value} value={o.value}>{o.label}</option>
+              ))}
+            </select>
+          </div>
+        </Card>
+
+        {loading && <p className="text-text-secondary">Loading...</p>}
+
+        <Card className="overflow-hidden p-0">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Vehicle</TableHead>
+                <TableHead>Plate</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Mileage</TableHead>
+                <TableHead>Driver</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {vehicles.map((v) => (
+                <TableRow key={v.id}>
+                  <TableCell>
+                    <Link to={`/vehicles/${v.id}`} className="text-primary hover:underline font-medium">
+                      {v.year} {v.make} {v.model}
+                    </Link>
+                  </TableCell>
+                  <TableCell className="font-mono text-sm">{v.license_plate}</TableCell>
+                  <TableCell>
+                    <Badge variant={statusVariant[v.status]}>
+                      {v.status.replace("_", " ")}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>{v.current_mileage.toLocaleString()} km</TableCell>
+                  <TableCell className="text-text-secondary">{v.assigned_driver_email ?? "—"}</TableCell>
+                  <TableCell className="text-right">
+                    <div className="flex justify-end gap-2">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => navigate(`/vehicles/${v.id}/edit`)}
+                      >
+                        Edit
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleDelete(v.id)}
+                        className="text-danger hover:bg-danger/10"
+                      >
+                        Delete
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+              {!loading && vehicles.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={6} className="text-center py-8 text-text-secondary">
+                    No vehicles found.
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </Card>
+
+        {totalPages > 1 && (
+          <div className="flex items-center justify-center gap-4 mt-6">
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={page <= 1}
+              onClick={() => setPage(page - 1)}
+            >
+              Previous
+            </Button>
+            <span className="text-sm text-text-secondary">
+              Page {page} of {totalPages}
+            </span>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={page >= totalPages}
+              onClick={() => setPage(page + 1)}
+            >
+              Next
+            </Button>
+          </div>
+        )}
       </div>
-
-      {error && (
-        <div className="error" role="alert">
-          {error}
-          <button onClick={clearError} type="button">&times;</button>
-        </div>
-      )}
-
-      <div style={{ display: "flex", gap: "1rem", margin: "1rem 0" }}>
-        <input
-          type="search"
-          placeholder="Search make, model, plate…"
-          value={search}
-          onChange={(e) => { setSearch(e.target.value); setPage(1); }}
-          aria-label="Search vehicles"
-        />
-        <select
-          value={status}
-          onChange={(e) => { setStatus(e.target.value); setPage(1); }}
-          aria-label="Filter by status"
-        >
-          {STATUS_OPTIONS.map((o) => (
-            <option key={o.value} value={o.value}>{o.label}</option>
-          ))}
-        </select>
-      </div>
-
-      {loading && <p>Loading…</p>}
-
-      <table style={{ width: "100%", borderCollapse: "collapse" }}>
-        <thead>
-          <tr>
-            <th style={{ textAlign: "left", padding: "0.5rem" }}>Vehicle</th>
-            <th style={{ textAlign: "left", padding: "0.5rem" }}>Plate</th>
-            <th style={{ textAlign: "left", padding: "0.5rem" }}>Status</th>
-            <th style={{ textAlign: "left", padding: "0.5rem" }}>Mileage</th>
-            <th style={{ textAlign: "left", padding: "0.5rem" }}>Driver</th>
-            <th style={{ textAlign: "right", padding: "0.5rem" }}>Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          {vehicles.map((v) => (
-            <tr key={v.id} style={{ borderTop: "1px solid #e5e7eb" }}>
-              <td style={{ padding: "0.5rem" }}>
-                <Link to={`/vehicles/${v.id}`}>{v.year} {v.make} {v.model}</Link>
-              </td>
-              <td style={{ padding: "0.5rem" }}>{v.license_plate}</td>
-              <td style={{ padding: "0.5rem" }}>
-                <span
-                  style={{
-                    color: "#fff",
-                    background: statusColor[v.status],
-                    padding: "0.15rem 0.5rem",
-                    borderRadius: "4px",
-                    fontSize: "0.85rem",
-                  }}
-                >
-                  {v.status.replace("_", " ")}
-                </span>
-              </td>
-              <td style={{ padding: "0.5rem" }}>{v.current_mileage.toLocaleString()} km</td>
-              <td style={{ padding: "0.5rem" }}>{v.assigned_driver_email ?? "—"}</td>
-              <td style={{ padding: "0.5rem", textAlign: "right" }}>
-                <button onClick={() => navigate(`/vehicles/${v.id}/edit`)} style={{ marginRight: "0.5rem" }}>
-                  Edit
-                </button>
-                <button onClick={() => handleDelete(v.id)}>Delete</button>
-              </td>
-            </tr>
-          ))}
-          {!loading && vehicles.length === 0 && (
-            <tr>
-              <td colSpan={6} style={{ padding: "2rem", textAlign: "center" }}>
-                No vehicles found.
-              </td>
-            </tr>
-          )}
-        </tbody>
-      </table>
-
-      {totalPages > 1 && (
-        <div style={{ display: "flex", justifyContent: "center", gap: "0.5rem", marginTop: "1rem" }}>
-          <button disabled={page <= 1} onClick={() => setPage(page - 1)}>Previous</button>
-          <span>Page {page} of {totalPages}</span>
-          <button disabled={page >= totalPages} onClick={() => setPage(page + 1)}>Next</button>
-        </div>
-      )}
     </div>
   );
 }

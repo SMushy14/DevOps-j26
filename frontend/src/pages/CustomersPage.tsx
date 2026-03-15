@@ -1,6 +1,13 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useCustomerStore } from "../store/customerStore";
+import { PageHeader } from "../components/layout/PageHeader";
+import { Button } from "../components/ui/button";
+import { Input } from "../components/ui/input";
+import { Badge } from "../components/ui/badge";
+import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from "../components/ui/table";
+import { Card } from "../components/ui/card";
+import { User, Building } from "lucide-react";
 import type { CustomerType } from "../types";
 
 const TYPE_OPTIONS: { value: string; label: string }[] = [
@@ -8,11 +15,6 @@ const TYPE_OPTIONS: { value: string; label: string }[] = [
   { value: "individual", label: "Individual" },
   { value: "business", label: "Business" },
 ];
-
-const typeIcon: Record<CustomerType, string> = {
-  individual: "👤",
-  business: "🏢",
-};
 
 export default function CustomersPage() {
   const { customers, totalCount, loading, error, fetchCustomers, deleteCustomer, clearError } =
@@ -39,84 +41,137 @@ export default function CustomersPage() {
   const totalPages = Math.ceil(totalCount / 20);
 
   return (
-    <div className="page">
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <h1>Customers</h1>
-        <button onClick={() => navigate("/customers/new")}>+ Add Customer</button>
+    <div>
+      <PageHeader
+        title="Customers"
+        description={`Manage your ${totalCount} customers`}
+        actions={
+          <Button onClick={() => navigate("/customers/new")}>
+            Add Customer
+          </Button>
+        }
+      />
+
+      <div className="mt-6">
+        {error && (
+          <div className="bg-danger/10 border border-danger text-danger rounded-lg p-4 mb-4 flex items-center justify-between">
+            <span>{error}</span>
+            <button onClick={clearError} className="text-danger hover:text-danger/80">
+              &times;
+            </button>
+          </div>
+        )}
+
+        <Card className="mb-6">
+          <div className="flex gap-4">
+            <Input
+              type="search"
+              placeholder="Search name, email, phone..."
+              value={search}
+              onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+              className="flex-1"
+            />
+            <select
+              value={customerType}
+              onChange={(e) => { setCustomerType(e.target.value); setPage(1); }}
+              className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+            >
+              {TYPE_OPTIONS.map((o) => (
+                <option key={o.value} value={o.value}>{o.label}</option>
+              ))}
+            </select>
+          </div>
+        </Card>
+
+        {loading && <p className="text-text-secondary">Loading...</p>}
+
+        <Card className="overflow-hidden p-0">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Name</TableHead>
+                <TableHead>Type</TableHead>
+                <TableHead>Email</TableHead>
+                <TableHead>Phone</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {customers.map((c) => (
+                <TableRow key={c.id}>
+                  <TableCell>
+                    <div className="flex items-center gap-2">
+                      {c.customer_type === 'individual' ? (
+                        <User size={16} className="text-text-secondary" />
+                      ) : (
+                        <Building size={16} className="text-text-secondary" />
+                      )}
+                      <span className="font-medium">{c.name}</span>
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant={c.customer_type === 'individual' ? 'default' : 'secondary'}>
+                      {c.customer_type}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="text-text-secondary">{c.email || "—"}</TableCell>
+                  <TableCell className="font-mono text-sm">{c.phone || "—"}</TableCell>
+                  <TableCell className="text-right">
+                    <div className="flex justify-end gap-2">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => navigate(`/customers/${c.id}/edit`)}
+                      >
+                        Edit
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleDelete(c.id)}
+                        className="text-danger hover:bg-danger/10"
+                      >
+                        Delete
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+              {!loading && customers.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={5} className="text-center py-8 text-text-secondary">
+                    No customers found.
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </Card>
+
+        {totalPages > 1 && (
+          <div className="flex items-center justify-center gap-4 mt-6">
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={page <= 1}
+              onClick={() => setPage(page - 1)}
+            >
+              Previous
+            </Button>
+            <span className="text-sm text-text-secondary">
+              Page {page} of {totalPages}
+            </span>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={page >= totalPages}
+              onClick={() => setPage(page + 1)}
+            >
+              Next
+            </Button>
+          </div>
+        )}
       </div>
-
-      {error && (
-        <div className="error" role="alert">
-          {error}
-          <button onClick={clearError} type="button">&times;</button>
-        </div>
-      )}
-
-      <div style={{ display: "flex", gap: "1rem", margin: "1rem 0" }}>
-        <input
-          type="search"
-          placeholder="Search name, email, phone…"
-          value={search}
-          onChange={(e) => { setSearch(e.target.value); setPage(1); }}
-          aria-label="Search customers"
-        />
-        <select
-          value={customerType}
-          onChange={(e) => { setCustomerType(e.target.value); setPage(1); }}
-          aria-label="Filter by type"
-        >
-          {TYPE_OPTIONS.map((o) => (
-            <option key={o.value} value={o.value}>{o.label}</option>
-          ))}
-        </select>
-      </div>
-
-      {loading && <p>Loading…</p>}
-
-      <table style={{ width: "100%", borderCollapse: "collapse" }}>
-        <thead>
-          <tr>
-            <th style={{ textAlign: "left", padding: "0.5rem" }}>Name</th>
-            <th style={{ textAlign: "left", padding: "0.5rem" }}>Type</th>
-            <th style={{ textAlign: "left", padding: "0.5rem" }}>Email</th>
-            <th style={{ textAlign: "left", padding: "0.5rem" }}>Phone</th>
-            <th style={{ textAlign: "right", padding: "0.5rem" }}>Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          {customers.map((c) => (
-            <tr key={c.id} style={{ borderTop: "1px solid #e5e7eb" }}>
-              <td style={{ padding: "0.5rem" }}>
-                {typeIcon[c.customer_type]} {c.name}
-              </td>
-              <td style={{ padding: "0.5rem" }}>{c.customer_type}</td>
-              <td style={{ padding: "0.5rem" }}>{c.email || "—"}</td>
-              <td style={{ padding: "0.5rem" }}>{c.phone || "—"}</td>
-              <td style={{ padding: "0.5rem", textAlign: "right" }}>
-                <button onClick={() => navigate(`/customers/${c.id}/edit`)} style={{ marginRight: "0.5rem" }}>
-                  Edit
-                </button>
-                <button onClick={() => handleDelete(c.id)}>Delete</button>
-              </td>
-            </tr>
-          ))}
-          {!loading && customers.length === 0 && (
-            <tr>
-              <td colSpan={5} style={{ padding: "2rem", textAlign: "center" }}>
-                No customers found.
-              </td>
-            </tr>
-          )}
-        </tbody>
-      </table>
-
-      {totalPages > 1 && (
-        <div style={{ display: "flex", justifyContent: "center", gap: "0.5rem", marginTop: "1rem" }}>
-          <button disabled={page <= 1} onClick={() => setPage(page - 1)}>Previous</button>
-          <span>Page {page} of {totalPages}</span>
-          <button disabled={page >= totalPages} onClick={() => setPage(page + 1)}>Next</button>
-        </div>
-      )}
     </div>
   );
 }
