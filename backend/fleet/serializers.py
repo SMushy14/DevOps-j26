@@ -2,7 +2,8 @@
 
 from rest_framework import serializers
 
-from fleet.models import StatusHistory, Vehicle, VehicleDocument
+from authentication.models import User
+from fleet.models import DriverProfile, StatusHistory, Trip, Vehicle, VehicleDocument
 
 
 class VehicleSerializer(serializers.ModelSerializer):
@@ -86,3 +87,114 @@ class VehicleDetailSerializer(VehicleSerializer):
 
     class Meta(VehicleSerializer.Meta):
         fields = [*VehicleSerializer.Meta.fields, "documents", "status_history", "assigned_driver_email"]
+
+
+class UserSerializer(serializers.ModelSerializer):
+    """Basic user serializer for nested driver profile data."""
+
+    class Meta:
+        model = User
+        fields = ["id", "email", "first_name", "last_name", "role"]
+        read_only_fields = fields
+
+
+class DriverProfileSerializer(serializers.ModelSerializer):
+    """Serializer for driver profiles with nested user data."""
+
+    user = UserSerializer(read_only=True)
+    user_id = serializers.PrimaryKeyRelatedField(
+        queryset=User.objects.all(),
+        source="user",
+        write_only=True,
+    )
+
+    class Meta:
+        model = DriverProfile
+        fields = [
+            "id",
+            "user",
+            "user_id",
+            "license_number",
+            "license_expiry",
+            "license_class",
+            "date_of_birth",
+            "emergency_contact_name",
+            "emergency_contact_phone",
+            "notes",
+            "created_at",
+            "updated_at",
+        ]
+        read_only_fields = ["id", "user", "created_at", "updated_at"]
+
+
+class TripSerializer(serializers.ModelSerializer):
+    """Serializer for trip listing and creation."""
+
+    # Nested read-only fields
+    vehicle = VehicleSerializer(read_only=True)
+    driver = UserSerializer(read_only=True)
+
+    # Write-only IDs for creation
+    vehicle_id = serializers.PrimaryKeyRelatedField(
+        queryset=Vehicle.objects.all(),
+        source="vehicle",
+        write_only=True,
+    )
+    driver_id = serializers.PrimaryKeyRelatedField(
+        queryset=User.objects.all(),
+        source="driver",
+        write_only=True,
+    )
+
+    # Computed read-only fields
+    distance_km = serializers.IntegerField(read_only=True)
+    duration_hours = serializers.FloatField(read_only=True)
+
+    class Meta:
+        model = Trip
+        fields = [
+            "id",
+            "vehicle",
+            "vehicle_id",
+            "driver",
+            "driver_id",
+            "status",
+            "start_time",
+            "end_time",
+            "start_mileage",
+            "end_mileage",
+            "start_location",
+            "end_location",
+            "purpose",
+            "fuel_consumed",
+            "notes",
+            "distance_km",
+            "duration_hours",
+            "created_at",
+            "updated_at",
+        ]
+        read_only_fields = [
+            "id",
+            "vehicle",
+            "driver",
+            "status",
+            "distance_km",
+            "duration_hours",
+            "created_at",
+            "updated_at",
+        ]
+
+
+class CompleteTripSerializer(serializers.Serializer):
+    """Serializer for completing a trip."""
+
+    end_time = serializers.DateTimeField()
+    end_mileage = serializers.IntegerField(min_value=0)
+    end_location = serializers.CharField(max_length=255, required=False, allow_blank=True)
+    fuel_consumed = serializers.DecimalField(
+        max_digits=8,
+        decimal_places=2,
+        required=False,
+        allow_null=True,
+    )
+    notes = serializers.CharField(required=False, allow_blank=True)

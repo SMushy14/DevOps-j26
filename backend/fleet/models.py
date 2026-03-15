@@ -130,3 +130,105 @@ class VehicleDocument(TenantAwareModel):
         from django.utils import timezone
 
         return self.expiry_date < timezone.now().date()
+
+
+class DriverProfile(TenantAwareModel):
+    """Extended profile for users with driver role."""
+
+    user = models.OneToOneField(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="driver_profile",
+    )
+    license_number = models.CharField(max_length=50)
+    license_expiry = models.DateField()
+    license_class = models.CharField(max_length=20)
+    date_of_birth = models.DateField()
+    emergency_contact_name = models.CharField(max_length=100)
+    emergency_contact_phone = models.CharField(max_length=20)
+    notes = models.TextField(blank=True)
+
+    class Meta:
+        db_table = "fleet_driver_profile"
+
+    def __str__(self) -> str:
+        return f"{self.user.get_full_name()} ({self.license_number})"
+
+
+class TripStatus(models.TextChoices):
+    IN_PROGRESS = "in_progress", "In Progress"
+    COMPLETED = "completed", "Completed"
+    CANCELLED = "cancelled", "Cancelled"
+
+
+class Trip(TenantAwareModel):
+    """Trip/journey record for a vehicle."""
+
+    vehicle = models.ForeignKey(Vehicle, on_delete=models.PROTECT, related_name="trips")
+    driver = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        related_name="trips",
+    )
+    status = models.CharField(
+        max_length=20,
+        choices=TripStatus.choices,
+        default=TripStatus.IN_PROGRESS,
+    )
+
+    # Trip details
+    start_time = models.DateTimeField()
+    end_time = models.DateTimeField(null=True, blank=True)
+    start_mileage = models.PositiveIntegerField()
+    end_mileage = models.PositiveIntegerField(null=True, blank=True)
+
+    # Optional details
+    start_location = models.CharField(max_length=255, blank=True)
+    end_location = models.CharField(max_length=255, blank=True)
+    purpose = models.CharField(max_length=255, blank=True)
+    fuel_consumed = models.DecimalField(
+        max_digits=8,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        help_text="Fuel consumed in liters",
+    )
+    notes = models.TextField(blank=True)
+
+    class Meta:
+        db_table = "fleet_trip"
+        ordering: ClassVar[list[str]] = ["-start_time"]
+
+    def __str__(self) -> str:
+        vehicle_str = f"{self.vehicle.make} {self.vehicle.model}"
+        driver_str = self.driver.get_full_name() or self.driver.email
+        return f"{vehicle_str} - {driver_str} ({self.start_time.date()})"
+
+    @property
+    def distance_km(self) -> int | None:
+        """Calculate distance traveled in kilometers."""
+        if self.end_mileage is not None:
+            return self.end_mileage - self.start_mileage
+        return None
+
+    @property
+    def duration_hours(self) -> float | None:
+        """Calculate trip duration in hours."""
+        if self.end_time is not None:
+            delta = self.end_time - self.start_time
+            return delta.total_seconds() / 3600
+        return None
+
+    def clean(self) -> None:
+        """Validate trip data."""
+        super().clean()
+
+        # End mileage must be greater than start mileage
+        if self.end_mileage is not None and self.end_mileage <= self.start_mileage:
+            msg = "End mileage must be greater than start mileage."
+            raise ValidationError({"end_mileage": msg})
+
+        # End time must be after start time
+        if self.end_time is not None and self.end_time <= self.start_time:
+            msg = "End time must be after start time."
+            raise ValidationError({"end_time": msg})
