@@ -143,6 +143,12 @@
           - "3000:80"
 
     # ── Deploy Nginx Reverse Proxy ─────────────
+    - name: Create application directory
+      file:
+        path: "{{ app_dir }}"
+        state: directory
+        mode: '0755'
+
     - name: Create Nginx configuration
       copy:
         dest: "{{ app_dir }}/nginx.conf"
