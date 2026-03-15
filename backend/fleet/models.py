@@ -130,3 +130,26 @@ class VehicleDocument(TenantAwareModel):
         from django.utils import timezone
 
         return self.expiry_date < timezone.now().date()
+
+
+class DriverProfile(TenantAwareModel):
+    """Extended profile for users with driver role."""
+
+    user = models.OneToOneField(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="driver_profile",
+    )
+    license_number = models.CharField(max_length=50)
+    license_expiry = models.DateField()
+    license_class = models.CharField(max_length=20)
+    date_of_birth = models.DateField()
+    emergency_contact_name = models.CharField(max_length=100)
+    emergency_contact_phone = models.CharField(max_length=20)
+    notes = models.TextField(blank=True)
+
+    class Meta:
+        db_table = "fleet_driver_profile"
+
+    def __str__(self) -> str:
+        return f"{self.user.get_full_name()} ({self.license_number})"
