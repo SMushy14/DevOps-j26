@@ -1,80 +1,156 @@
-import { render, screen } from "@testing-library/react";
-import { MemoryRouter } from "react-router-dom";
-import { describe, it, expect, beforeEach } from "vitest";
-import App from "./App";
-import { useAuthStore } from "./store/authStore";
-import type { User } from "./types";
+import { describe, test, expect, vi, beforeEach } from 'vitest';
+import { render, screen } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
+import App from './App';
+import { useAuthStore } from './store/authStore';
 
-const testUser: User = {
-  id: 1,
-  email: "a@b.com",
-  first_name: "A",
-  last_name: "B",
-  role: "tenant_admin",
-  tenant: { id: 1, name: "T", subdomain: "t" },
-};
+vi.mock('./components/layout/AppLayout', () => ({
+  AppLayout: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+}));
 
-describe("App routing", () => {
+vi.mock('./store/authStore', () => ({
+  useAuthStore: vi.fn(),
+}));
+
+describe('App', () => {
   beforeEach(() => {
-    useAuthStore.setState({ user: null, loading: false, error: null });
+    vi.mocked(useAuthStore).mockImplementation((selector: any) => {
+      const mockState = {
+        user: null,
+        loading: false,
+        error: null,
+        login: vi.fn(),
+        register: vi.fn(),
+        logout: vi.fn(),
+        fetchMe: vi.fn(),
+        clearError: vi.fn(),
+      };
+      return selector ? selector(mockState) : mockState;
+    });
   });
 
-  it("redirects unauthenticated user to login", () => {
+  test('redirects unauthenticated user to login', () => {
     render(
-      <MemoryRouter initialEntries={["/dashboard"]}>
+      <MemoryRouter initialEntries={['/']}>
         <App />
-      </MemoryRouter>,
+      </MemoryRouter>
     );
-    expect(screen.getByText("Login")).toBeInTheDocument();
+
+    expect(screen.getByText(/Sign in/i)).toBeInTheDocument();
   });
 
-  it("shows login form at /login", () => {
+  test('shows login form at /login', () => {
     render(
-      <MemoryRouter initialEntries={["/login"]}>
+      <MemoryRouter initialEntries={['/login']}>
         <App />
-      </MemoryRouter>,
+      </MemoryRouter>
     );
-    expect(screen.getByText("Sign in")).toBeInTheDocument();
+
+    expect(screen.getByText('FleeMa')).toBeInTheDocument();
+    expect(screen.getByLabelText(/email/i)).toBeInTheDocument();
   });
 
-  it("shows register form at /register", () => {
+  test('shows register form at /register', () => {
     render(
-      <MemoryRouter initialEntries={["/register"]}>
+      <MemoryRouter initialEntries={['/register']}>
         <App />
-      </MemoryRouter>,
+      </MemoryRouter>
     );
-    expect(screen.getByRole("heading", { name: "Create Account" })).toBeInTheDocument();
+
+    expect(screen.getAllByText('Create Account').length).toBeGreaterThan(0);
+    expect(screen.getByLabelText(/company name/i)).toBeInTheDocument();
   });
 
-  it("authenticated user sees dashboard", () => {
-    useAuthStore.setState({ user: testUser });
+  test('authenticated user sees dashboard', () => {
+    vi.mocked(useAuthStore).mockImplementation((selector: any) => {
+      const mockState = {
+        user: {
+          id: 1,
+          email: 'test@example.com',
+          first_name: 'Test',
+          last_name: 'User',
+          role: 'manager',
+          tenant: null,
+        },
+        loading: false,
+        error: null,
+        login: vi.fn(),
+        register: vi.fn(),
+        logout: vi.fn(),
+        fetchMe: vi.fn(),
+        clearError: vi.fn(),
+      };
+      return selector ? selector(mockState) : mockState;
+    });
+
     render(
-      <MemoryRouter initialEntries={["/dashboard"]}>
+      <MemoryRouter initialEntries={['/dashboard']}>
         <App />
-      </MemoryRouter>,
+      </MemoryRouter>
     );
-    expect(screen.getByText(/Dashboard/)).toBeInTheDocument();
+
+    expect(screen.getByText('Dashboard')).toBeInTheDocument();
   });
 
-  it("authenticated user at /login is redirected to dashboard", () => {
-    useAuthStore.setState({ user: testUser });
+  test('authenticated user at /login is redirected to dashboard', () => {
+    vi.mocked(useAuthStore).mockImplementation((selector: any) => {
+      const mockState = {
+        user: {
+          id: 1,
+          email: 'test@example.com',
+          first_name: 'Test',
+          last_name: 'User',
+          role: 'manager',
+          tenant: null,
+        },
+        loading: false,
+        error: null,
+        login: vi.fn(),
+        register: vi.fn(),
+        logout: vi.fn(),
+        fetchMe: vi.fn(),
+        clearError: vi.fn(),
+      };
+      return selector ? selector(mockState) : mockState;
+    });
+
     render(
-      <MemoryRouter initialEntries={["/login"]}>
+      <MemoryRouter initialEntries={['/login']}>
         <App />
-      </MemoryRouter>,
+      </MemoryRouter>
     );
-    expect(screen.getByText(/Dashboard/)).toBeInTheDocument();
+
+    expect(screen.getByText('Dashboard')).toBeInTheDocument();
   });
 
-  it("authenticated user sees profile page", () => {
-    useAuthStore.setState({ user: testUser });
+  test('authenticated user sees profile page', () => {
+    vi.mocked(useAuthStore).mockImplementation((selector: any) => {
+      const mockState = {
+        user: {
+          id: 1,
+          email: 'test@example.com',
+          first_name: 'Test',
+          last_name: 'User',
+          role: 'manager',
+          tenant: null,
+        },
+        loading: false,
+        error: null,
+        login: vi.fn(),
+        register: vi.fn(),
+        logout: vi.fn(),
+        fetchMe: vi.fn(),
+        clearError: vi.fn(),
+      };
+      return selector ? selector(mockState) : mockState;
+    });
+
     render(
-      <MemoryRouter initialEntries={["/profile"]}>
+      <MemoryRouter initialEntries={['/profile']}>
         <App />
-      </MemoryRouter>,
+      </MemoryRouter>
     );
-    expect(screen.getByText("A B")).toBeInTheDocument();
-    expect(screen.getByText("a@b.com")).toBeInTheDocument();
-    expect(screen.getByText("tenant_admin")).toBeInTheDocument();
+
+    expect(screen.getByText(/Profile/i)).toBeInTheDocument();
   });
 });

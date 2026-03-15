@@ -7,6 +7,14 @@ import { useVehicleStore } from "./store/vehicleStore";
 import { useCustomerStore } from "./store/customerStore";
 import type { User, Vehicle, Customer } from "./types";
 
+vi.mock('./components/layout/AppLayout', () => ({
+  AppLayout: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+}));
+
+vi.mock('./store/authStore', () => ({
+  useAuthStore: vi.fn(),
+}));
+
 const testUser: User = {
   id: 1,
   email: "a@b.com",
@@ -52,8 +60,26 @@ const mockFetchVehicles = vi.fn();
 const mockFetchCustomers = vi.fn();
 const mockFetchVehicle = vi.fn();
 
+// Helper to mock authenticated user
+const mockAuthUser = (user: typeof testUser | null) => {
+  vi.mocked(useAuthStore).mockImplementation((selector: any) => {
+    const mockState = {
+      user,
+      loading: false,
+      error: null,
+      login: vi.fn(),
+      register: vi.fn(),
+      logout: vi.fn(),
+      fetchMe: vi.fn(),
+      clearError: vi.fn(),
+    };
+    return selector ? selector(mockState) : mockState;
+  });
+};
+
 beforeEach(() => {
-  useAuthStore.setState({ user: null, loading: false, error: null });
+  mockAuthUser(null);
+
   useVehicleStore.setState({
     vehicles: [],
     totalCount: 0,
@@ -75,7 +101,7 @@ beforeEach(() => {
 
 describe("Vehicle pages routing", () => {
   it("authenticated user sees vehicles page at /vehicles", () => {
-    useAuthStore.setState({ user: testUser });
+    mockAuthUser(testUser);
     useVehicleStore.setState({
       vehicles: [testVehicle],
       totalCount: 1,
@@ -91,7 +117,7 @@ describe("Vehicle pages routing", () => {
   });
 
   it("vehicles page shows search and filter controls", () => {
-    useAuthStore.setState({ user: testUser });
+    mockAuthUser(testUser);
     useVehicleStore.setState({
       vehicles: [],
       totalCount: 0,
@@ -102,12 +128,12 @@ describe("Vehicle pages routing", () => {
         <App />
       </MemoryRouter>,
     );
-    expect(screen.getByLabelText("Search vehicles")).toBeInTheDocument();
-    expect(screen.getByLabelText("Filter by status")).toBeInTheDocument();
+    expect(screen.getByPlaceholderText("Search make, model, plate...")).toBeInTheDocument();
+    expect(screen.getByDisplayValue("All")).toBeInTheDocument();
   });
 
   it("vehicles page shows empty state", () => {
-    useAuthStore.setState({ user: testUser });
+    mockAuthUser(testUser);
     useVehicleStore.setState({
       vehicles: [],
       totalCount: 0,
@@ -122,7 +148,7 @@ describe("Vehicle pages routing", () => {
   });
 
   it("vehicle list shows status badge and mileage", () => {
-    useAuthStore.setState({ user: testUser });
+    mockAuthUser(testUser);
     useVehicleStore.setState({
       vehicles: [testVehicle],
       totalCount: 1,
@@ -138,7 +164,7 @@ describe("Vehicle pages routing", () => {
   });
 
   it("authenticated user sees add vehicle form at /vehicles/new", () => {
-    useAuthStore.setState({ user: testUser });
+    mockAuthUser(testUser);
     render(
       <MemoryRouter initialEntries={["/vehicles/new"]}>
         <App />
@@ -149,7 +175,7 @@ describe("Vehicle pages routing", () => {
   });
 
   it("vehicle form has all required fields", () => {
-    useAuthStore.setState({ user: testUser });
+    mockAuthUser(testUser);
     render(
       <MemoryRouter initialEntries={["/vehicles/new"]}>
         <App />
@@ -163,7 +189,7 @@ describe("Vehicle pages routing", () => {
   });
 
   it("vehicle detail page shows loading when no vehicle", () => {
-    useAuthStore.setState({ user: testUser });
+    mockAuthUser(testUser);
     useVehicleStore.setState({
       currentVehicle: null,
       loading: false,
@@ -178,7 +204,7 @@ describe("Vehicle pages routing", () => {
   });
 
   it("vehicle detail page shows vehicle info with tabs", () => {
-    useAuthStore.setState({ user: testUser });
+    mockAuthUser(testUser);
     useVehicleStore.setState({
       currentVehicle: {
         ...testVehicle,
@@ -200,7 +226,7 @@ describe("Vehicle pages routing", () => {
   });
 
   it("vehicle edit form at /vehicles/:id/edit shows Edit Vehicle heading", () => {
-    useAuthStore.setState({ user: testUser });
+    mockAuthUser(testUser);
     useVehicleStore.setState({
       currentVehicle: {
         ...testVehicle,
@@ -224,13 +250,13 @@ describe("Vehicle pages routing", () => {
         <App />
       </MemoryRouter>,
     );
-    expect(screen.getByText("Login")).toBeInTheDocument();
+    expect(screen.getByText(/Sign in/i)).toBeInTheDocument();
   });
 });
 
 describe("Customer pages routing", () => {
   it("authenticated user sees customers page at /customers", () => {
-    useAuthStore.setState({ user: testUser });
+    mockAuthUser(testUser);
     useCustomerStore.setState({
       customers: [testCustomer],
       totalCount: 1,
@@ -246,7 +272,7 @@ describe("Customer pages routing", () => {
   });
 
   it("customers page shows search and filter controls", () => {
-    useAuthStore.setState({ user: testUser });
+    mockAuthUser(testUser);
     useCustomerStore.setState({
       customers: [],
       totalCount: 0,
@@ -257,12 +283,12 @@ describe("Customer pages routing", () => {
         <App />
       </MemoryRouter>,
     );
-    expect(screen.getByLabelText("Search customers")).toBeInTheDocument();
-    expect(screen.getByLabelText("Filter by type")).toBeInTheDocument();
+    expect(screen.getByPlaceholderText("Search name, email, phone...")).toBeInTheDocument();
+    expect(screen.getByDisplayValue("All")).toBeInTheDocument();
   });
 
   it("customers page shows empty state", () => {
-    useAuthStore.setState({ user: testUser });
+    mockAuthUser(testUser);
     useCustomerStore.setState({
       customers: [],
       totalCount: 0,
@@ -277,7 +303,7 @@ describe("Customer pages routing", () => {
   });
 
   it("customer list shows type icon and email", () => {
-    useAuthStore.setState({ user: testUser });
+    mockAuthUser(testUser);
     useCustomerStore.setState({
       customers: [testCustomer],
       totalCount: 1,
@@ -293,7 +319,7 @@ describe("Customer pages routing", () => {
   });
 
   it("authenticated user sees add customer form at /customers/new", () => {
-    useAuthStore.setState({ user: testUser });
+    mockAuthUser(testUser);
     render(
       <MemoryRouter initialEntries={["/customers/new"]}>
         <App />
@@ -304,7 +330,7 @@ describe("Customer pages routing", () => {
   });
 
   it("customer form has all required fields", () => {
-    useAuthStore.setState({ user: testUser });
+    mockAuthUser(testUser);
     render(
       <MemoryRouter initialEntries={["/customers/new"]}>
         <App />
@@ -317,7 +343,7 @@ describe("Customer pages routing", () => {
   });
 
   it("customer edit form shows Edit Customer heading", () => {
-    useAuthStore.setState({ user: testUser });
+    mockAuthUser(testUser);
     useCustomerStore.setState({
       customers: [testCustomer],
       totalCount: 1,
@@ -337,6 +363,6 @@ describe("Customer pages routing", () => {
         <App />
       </MemoryRouter>,
     );
-    expect(screen.getByText("Login")).toBeInTheDocument();
+    expect(screen.getByText(/Sign in/i)).toBeInTheDocument();
   });
 });

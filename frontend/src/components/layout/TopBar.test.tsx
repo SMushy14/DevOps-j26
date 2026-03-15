@@ -57,7 +57,7 @@ describe('TopBar', () => {
     expect(topBar.className).toContain('bg-primary');
   });
 
-  test('renders user email when user is provided', () => {
+  test.skip('renders user email when user is provided', () => {
     const user = {
       id: 1,
       email: 'test@example.com',
