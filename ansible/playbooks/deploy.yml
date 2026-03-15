@@ -95,9 +95,9 @@
         networks:
           - name: "{{ docker_network }}"
         env:
-          DJANGO_SECRET_KEY: "{{ django_secret_key | default(lookup('password', '/dev/null length=50 chars=ascii_letters,digits')) }}"
-          DJANGO_DEBUG: "{{ 'True' if app_environment == 'dev' else 'False' }}"
-          DJANGO_ALLOWED_HOSTS: "*"
+          SECRET_KEY: "{{ django_secret_key | default(lookup('password', '/dev/null length=50 chars=ascii_letters,digits')) }}"
+          DEBUG: "{{ 'True' if app_environment == 'dev' else 'False' }}"
+          ALLOWED_HOSTS: "*"
           POSTGRES_HOST: "{{ db_host }}"
           POSTGRES_PORT: "{{ db_port | string }}"
           POSTGRES_DB: "{{ db_name }}"
