@@ -13,6 +13,8 @@ app_repository: "ghcr.io/{{ github_username }}/fleema"
 backend_image: "{{ app_repository }}-backend"
 frontend_image: "{{ app_repository }}-frontend"
 image_tag: "dev"  # Change to 'latest' for production or specific version
+app_dir: "/home/ubuntu/fleema"  # Application directory on EC2
+app_user: "fleema"  # Application user
 
 # ── Container Names ──────────────────────────
 backend_container: "fleema-backend"
