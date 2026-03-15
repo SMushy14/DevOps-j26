@@ -7,9 +7,10 @@ from rest_framework.response import Response
 
 from authentication.models import Role, User
 from authentication.permissions import IsTenantMember
-from fleet.models import Vehicle, VehicleDocument
+from fleet.models import DriverProfile, Vehicle, VehicleDocument
 from fleet.serializers import (
     DriverAssignSerializer,
+    DriverProfileSerializer,
     MileageSerializer,
     VehicleDetailSerializer,
     VehicleDocumentSerializer,
@@ -142,4 +143,32 @@ class VehicleDocumentViewSet(viewsets.ModelViewSet):
         serializer.save(tenant=self.request.user.tenant, vehicle=vehicle)
 
     def perform_destroy(self, instance):
+        instance.soft_delete()
+
+
+class DriverProfileViewSet(viewsets.ModelViewSet):
+    """
+    CRUD for driver profiles, scoped to the requesting user's tenant.
+    Only managers and admins can create/update/delete profiles.
+    """
+
+    permission_classes = [IsTenantMember]
+    serializer_class = DriverProfileSerializer
+    filter_backends = [filters.SearchFilter, filters.OrderingFilter]
+    search_fields = ["user__first_name", "user__last_name", "user__email", "license_number"]
+    ordering_fields = ["user__last_name", "license_expiry", "created_at"]
+    ordering = ["-created_at"]
+
+    def get_queryset(self):
+        """Return only active driver profiles for the user's tenant."""
+        return DriverProfile.objects.active().filter(
+            tenant=self.request.user.tenant,
+        ).select_related("user")
+
+    def perform_create(self, serializer):
+        """Auto-set tenant when creating a driver profile."""
+        serializer.save(tenant=self.request.user.tenant)
+
+    def perform_destroy(self, instance):
+        """Soft-delete driver profile."""
         instance.soft_delete()

@@ -2,7 +2,8 @@
 
 from rest_framework import serializers
 
-from fleet.models import StatusHistory, Vehicle, VehicleDocument
+from authentication.models import User
+from fleet.models import DriverProfile, StatusHistory, Vehicle, VehicleDocument
 
 
 class VehicleSerializer(serializers.ModelSerializer):
@@ -86,3 +87,41 @@ class VehicleDetailSerializer(VehicleSerializer):
 
     class Meta(VehicleSerializer.Meta):
         fields = [*VehicleSerializer.Meta.fields, "documents", "status_history", "assigned_driver_email"]
+
+
+class UserSerializer(serializers.ModelSerializer):
+    """Basic user serializer for nested driver profile data."""
+
+    class Meta:
+        model = User
+        fields = ["id", "email", "first_name", "last_name", "role"]
+        read_only_fields = fields
+
+
+class DriverProfileSerializer(serializers.ModelSerializer):
+    """Serializer for driver profiles with nested user data."""
+
+    user = UserSerializer(read_only=True)
+    user_id = serializers.PrimaryKeyRelatedField(
+        queryset=User.objects.all(),
+        source="user",
+        write_only=True,
+    )
+
+    class Meta:
+        model = DriverProfile
+        fields = [
+            "id",
+            "user",
+            "user_id",
+            "license_number",
+            "license_expiry",
+            "license_class",
+            "date_of_birth",
+            "emergency_contact_name",
+            "emergency_contact_phone",
+            "notes",
+            "created_at",
+            "updated_at",
+        ]
+        read_only_fields = ["id", "user", "created_at", "updated_at"]
