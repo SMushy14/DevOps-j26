@@ -20,7 +20,7 @@ export function UserMenu({ user }: UserMenuProps) {
   const getInitials = () => {
     const first = user.first_name?.[0] || '';
     const last = user.last_name?.[0] || '';
-    return (first + last).toUpperCase() || user.email[0].toUpperCase();
+    return (first + last).toUpperCase() || user.email?.[0]?.toUpperCase() || '?';
   };
 
   return (

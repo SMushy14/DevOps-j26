@@ -35,9 +35,7 @@ function App() {
 
       {/* Auth-required routes with AppLayout */}
       <Route element={<RequireAuth />}>
-        <Route element={<AppLayout><Navigate to="/dashboard" replace /></AppLayout>}>
-          <Route path="/" element={null} />
-        </Route>
+        <Route path="/" element={<Navigate to="/dashboard" replace />} />
         <Route path="/dashboard" element={<AppLayout><DashboardPlaceholder /></AppLayout>} />
         <Route path="/profile" element={<AppLayout><ProfilePage /></AppLayout>} />
         <Route path="/vehicles" element={<AppLayout><VehiclesPage /></AppLayout>} />
